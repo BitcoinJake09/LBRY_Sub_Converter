@@ -1,13 +1,15 @@
-from bs4 import BeautifulSoup
-import requests
 import os
+import requests
 import json
+import soupsieve
+import pkgutil
 
-if os.name == 'nt':
-    fileToOpen = 'subscription_manager.xml'
-else:
-    fileToOpen = 'subscription_manager'
+from bs4 import BeautifulSoup
+
+# Opening the subscription_manager file
+fileToOpen = 'subscription_manager'
 saveFileName = 'LBRY_Subscriptions.txt'
+
 if os.path.exists(saveFileName):
     append_write = 'a'
 else:
@@ -16,6 +18,7 @@ writeLbrySubs = open(saveFileName,append_write)
 with open(fileToOpen) as f:
     data = f.read()
 
+# Loading paraser
 soup = BeautifulSoup(data, "lxml")
 
 ids = []
@@ -27,6 +30,7 @@ for node in soup.find_all('outline'):
 
 newids = ','.join(ids)
 print(newids)
+# Create API Call based on list of extracted channel_ids
 resp = requests.get("https://api.lbry.com/yt/resolve?channel_ids={"+newids+"}")
 #url= f'https://api.lbry.com/yt/resolve?channel_ids={'+newids+'}'
 #x = requests.get(url)
@@ -35,13 +39,17 @@ parsed_json = json.loads(resp.text)
 datas = parsed_json["data"]
 channels = datas["channels"]
 print ("channels %s" % json.dumps(channels))
+
 for tempchannels in channels:
     if not channels[tempchannels] is None :
         print ("lbry://%s" % channels[tempchannels])
         writeLbrySubs.write("lbry://"+channels[tempchannels] + '\n')
+        
 writeLbrySubs.close()
 count = 0
+
 with open(saveFileName, 'r') as f:
     for line in f:
         count += 1
+        
 print ("Total number of YouTube channels are availible on LBRY: %s" % count)
